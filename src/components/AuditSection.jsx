@@ -2,6 +2,9 @@ import React, { useState, forwardRef } from 'react';
 
 function pickIconAndTone(text='') {
   const t = (text || '').toLowerCase();
+  if (t.includes('special condition') || t.includes('special conditions') || t.includes('caveat') || t.includes('caveats')) {
+    return { icon: '🚩', badge: 'Special' };
+  }
   if (t.includes('risk') || t.includes('warning') || t.includes('breach') || t.includes('mortgagee')) {
     return { icon: '⚠️', badge: 'Risk' };
   }
@@ -12,8 +15,11 @@ function pickIconAndTone(text='') {
 }
 
 function BoldHeadings({ text }) {
-  const html = String(text || '').replace(/(Title Info|Insurance|Notices|Mortgages|Planning\/Zoning|Rates|Outgoings)/gi, '<strong>$1</strong>');
-  return <div className="whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: html }} />;
+  const s = String(text || '');
+  const withBold = s
+    .replace(/(Title Info|Insurance|Notices|Mortgages|Planning\/Zoning|Rates|Outgoings)/gi, '<strong>$1</strong>')
+    .replace(/(Special Conditions?|Caveats?)/gi, '<mark><strong>$1</strong></mark>');
+  return <div className="whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: withBold }} />;
 }
 
 const AuditSection = forwardRef(function AuditSection({ summary, onReset, title = 'Review Summary' }, ref) {
@@ -61,8 +67,11 @@ function SummaryCard({ item }) {
         </div>
         <span className="text-blue-600">{open ? 'Hide' : 'Show'} details</span>
       </div>
-      <div className={`grid transition-all duration-300 ${open ? 'max-h-[9999px] opacity-100' : 'max-h-0 opacity-0'} px-4 overflow-hidden`}>
-        <div className="prose prose-sm max-w-none py-4 text-gray-700">
+      <div
+        data-collapsible
+        className={`grid transition-all duration-300 ${open ? 'max-h-[9999px] opacity-100' : 'max-h-0 opacity-0'} px-4 overflow-hidden`}
+      >
+        <div className="prose prose-sm max-w-none py-4 text-gray-700" data-panel>
           <BoldHeadings text={item.detail} />
         </div>
       </div>

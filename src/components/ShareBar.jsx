@@ -8,35 +8,53 @@ export default function ShareBar({ targetRef, doc }) {
     if (!targetRef?.current) return;
     const el = targetRef.current;
 
+    // Expand collapsibles
+    const collapses = Array.from(el.querySelectorAll('[data-collapsible]'));
+    const prevCollapse = collapses.map(p => ({ maxHeight: p.style.maxHeight, opacity: p.style.opacity, overflow: p.style.overflow }));
+    collapses.forEach(p => { p.style.maxHeight = 'none'; p.style.opacity = '1'; p.style.overflow = 'visible'; });
+
+    // Expand inner panels
+    const panels = Array.from(el.querySelectorAll('[data-panel]'));
+    const prevPanel = panels.map(p => ({ maxHeight: p.style.maxHeight, opacity: p.style.opacity, overflow: p.style.overflow }));
+    panels.forEach(p => { p.style.maxHeight = 'none'; p.style.opacity = '1'; p.style.overflow = 'visible'; });
+
+    // Remove container limits
     const prevMax = el.style.maxHeight;
     const prevOverflow = el.style.overflow;
     el.style.maxHeight = 'none';
     el.style.overflow = 'visible';
 
-    const canvas = await html2canvas(el, { scale: 2, backgroundColor: '#ffffff' });
+    const scale = 2;
+    const canvas = await html2canvas(el, { scale, backgroundColor: '#ffffff', useCORS: true, scrollY: -window.scrollY });
 
+    // Restore styles
     el.style.maxHeight = prevMax;
     el.style.overflow = prevOverflow;
+    collapses.forEach((p, i) => { p.style.maxHeight = prevCollapse[i].maxHeight; p.style.opacity = prevCollapse[i].opacity; p.style.overflow = prevCollapse[i].overflow; });
+    panels.forEach((p, i) => { p.style.maxHeight = prevPanel[i].maxHeight; p.style.opacity = prevPanel[i].opacity; p.style.overflow = prevPanel[i].overflow; });
 
-    const imgData = canvas.toDataURL('image/png');
+    // Slice into PDF pages
     const pdf = new jsPDF('p', 'pt', 'a4');
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
 
-    const imgWidth = pageWidth - 40;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    const margin = 20;
+    const imgWidth = pageWidth - margin * 2;
+    const ratio = canvas.width / imgWidth;
+    const pageHeightPx = pageHeight * ratio;
 
-    let heightLeft = imgHeight;
-    let position = 20;
+    for (let y = 0, pageIndex = 0; y < canvas.height; y += pageHeightPx, pageIndex++) {
+      const sliceHeight = Math.min(pageHeightPx, canvas.height - y);
+      const pageCanvas = document.createElement('canvas');
+      pageCanvas.width = canvas.width;
+      pageCanvas.height = sliceHeight;
+      const ctx = pageCanvas.getContext('2d');
+      ctx.drawImage(canvas, 0, y, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight);
+      const imgData = pageCanvas.toDataURL('image/png');
 
-    pdf.addImage(imgData, 'PNG', 20, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight;
-
-    while (heightLeft > 0) {
-      pdf.addPage();
-      position = heightLeft * -1 + 20;
-      pdf.addImage(imgData, 'PNG', 20, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
+      if (pageIndex > 0) pdf.addPage();
+      const imgHeight = sliceHeight / ratio;
+      pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, imgHeight);
     }
 
     pdf.save(`${(doc?.name || 'contract')}.pdf`);
@@ -59,7 +77,7 @@ export default function ShareBar({ targetRef, doc }) {
 
   return (
     <div className="flex items-center gap-3 mb-4">
-      <button onClick={handlePDF} className="px-3 py-2 rounded bg-gray-800 text-white text-sm hover:bg:black">Export PDF</button>
+      <button onClick={handlePDF} className="px-3 py-2 rounded bg-gray-800 text-white text-sm hover:bg-black">Export PDF</button>
       <button onClick={handleEmail} className="px-3 py-2 rounded bg-blue-600 text-white text-sm hover:bg-blue-700">Email Summary</button>
     </div>
   );

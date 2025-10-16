@@ -56,7 +56,7 @@ export default function App() {
   return (
     <div className="min-h-screen max-w-6xl mx-auto px-4 py-8">
       <header className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold tracking-tight text-gray-900">Contract Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900">S32 Insights Portal</h1>
         <button onClick={() => setShowAudit((s) => !s)} className="px-3 py-2 text-sm rounded border hover:bg-gray-50">
           {showAudit ? 'Close Audit' : 'Open Audit'}
         </button>
