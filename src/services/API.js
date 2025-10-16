@@ -24,17 +24,24 @@ export async function parseContract(fileRef) {
   }
 }
 
-// Optional backend email share (if you implement an endpoint)
 export async function shareEmail({ to, subject, body }) {
-  const emailEndpoint = import.meta.env.VITE_EMAIL_ENDPOINT;
-  if (!emailEndpoint) {
-    throw new Error("VITE_EMAIL_ENDPOINT not set; using mailto fallback.");
-  }
+  const emailEndpoint = import.meta.env.VITE_EMAIL_ENDPOINT || `${API_BASE}/share-email`;
   const res = await fetch(emailEndpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ to, subject, body }),
   });
   if (!res.ok) throw new Error("Email send failed");
+  return res.json();
+}
+
+export async function askAssistant({ question, context }) {
+  const askEndpoint = import.meta.env.VITE_ASK_ENDPOINT || `${API_BASE}/ask`;
+  const res = await fetch(askEndpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ question, context }),
+  });
+  if (!res.ok) throw new Error("Ask failed");
   return res.json();
 }

@@ -3,6 +3,8 @@ import UploadZone from './components/UploadZone';
 import AuditSection from './components/AuditSection';
 import AuditList from './components/AuditList';
 import ShareBar from './components/ShareBar';
+import LoadingAnimation from './components/LoadingAnimation';
+import ChatAssist from './components/ChatAssist';
 import { uploadFile, parseContract } from './services/API';
 import { loadHistory, upsertDoc } from './services/storage';
 
@@ -12,14 +14,11 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [summary, setSummary] = useState(null);
-  const [history, setHistory] = useState([]);
   const [currentDoc, setCurrentDoc] = useState(null);
   const [showAudit, setShowAudit] = useState(false);
   const summaryRef = useRef(null);
 
-  useEffect(() => {
-    setHistory(loadHistory());
-  }, []);
+  useEffect(() => { loadHistory(); }, []);
 
   const handleFileSelected = async (file) => {
     setError('');
@@ -35,8 +34,7 @@ export default function App() {
       setSummary(s);
 
       const doc = { id: makeId(), name: file.name, fileRef, summary: s, uploadedAt: new Date().toISOString() };
-      const newList = upsertDoc(doc);
-      setHistory(newList);
+      upsertDoc(doc);
       setCurrentDoc(doc);
 
       setTimeout(() => summaryRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
@@ -70,12 +68,7 @@ export default function App() {
             <UploadZone onSelectFile={handleFileSelected} disabled={loading} />
           )}
 
-          {loading && (
-            <div className="mt-10 flex items-center gap-3 text-gray-600">
-              <div className="h-5 w-5 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" />
-              <span>Processing your contract…</span>
-            </div>
-          )}
+          {loading && (<LoadingAnimation />)}
 
           {error && (
             <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded">{error}</div>
@@ -85,6 +78,7 @@ export default function App() {
             <div ref={summaryRef} className="mt-8">
               <ShareBar targetRef={summaryRef} doc={currentDoc} />
               <AuditSection ref={summaryRef} summary={summary} onReset={() => setSummary(null)} />
+              <ChatAssist summary={summary} docKey={currentDoc?.id || 'current'} />
             </div>
           )}
         </div>
