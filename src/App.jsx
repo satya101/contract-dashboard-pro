@@ -1,12 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
-import UploadZone from './components/UploadZone';
-import AuditSection from './components/AuditSection';
-import AuditList from './components/AuditList';
-import ShareBar from './components/ShareBar';
-import LoadingAnimation from './components/LoadingAnimation';
-import ChatAssist from './components/ChatAssist';
-import { uploadFile, parseContract } from './services/API';
-import { loadHistory, upsertDoc } from './services/storage';
+import UploadZone from './components/UploadZone.jsx';
+import AuditSection from './components/AuditSection.jsx';
+import AuditList from './components/AuditList.jsx';
+import ShareBar from './components/ShareBar.jsx';
+import LoadingAnimation from './components/LoadingAnimation.jsx';
+import ChatAssist from './components/ChatAssist.jsx';
+import { uploadFile, parseContract } from './services/API.js';
+import { loadHistory, upsertDoc } from './services/storage.js';
 
 function makeId() { return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`; }
 
