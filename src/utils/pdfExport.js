@@ -1,86 +1,135 @@
+// src/utils/pdfExport.js
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+
+function addFooter(pdf, pageNumber) {
+  const w = pdf.internal.pageSize.getWidth();
+  const h = pdf.internal.pageSize.getHeight();
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(9);
+  pdf.text(String(pageNumber), w - 20, h - 12, { align: "right" });
+}
+
+async function renderElementToPages({ pdf, el, title }) {
+  // Expand any collapsibles inside this element
+  const collapsibles = Array.from(el.querySelectorAll("[data-collapsible]"));
+  const originalClasses = collapsibles.map((n) => n.className);
+  collapsibles.forEach((n) => {
+    n.className = n.className
+      .replace(/max-h-\[.*?\]/g, "max-h-[99999px]")
+      .replace(/opacity-0/g, "opacity-100");
+    n.style.overflow = "visible";
+  });
+
+  // Render to canvas
+  const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
+  const fullW = canvas.width;
+  const fullH = canvas.height;
+
+  // Page metrics
+  const marginX = 20;
+  const marginY = 20;
+  const pageW = pdf.internal.pageSize.getWidth();
+  const pageH = pdf.internal.pageSize.getHeight();
+  const imgW = pageW - marginX * 2;
+  const pxPerPt = fullW / imgW;
+
+  // Section header height (points)
+  const headerH = 18;
+  const firstTop = marginY + headerH + 6; // title + gap
+
+  // First page available height (pts) and convert to px slice
+  const firstAvailPt = pageH - firstTop - marginY;
+  const sliceFirstPx = Math.floor(firstAvailPt * pxPerPt);
+
+  // Subsequent pages top margin (no title)
+  const nextTop = marginY;
+  const nextAvailPt = pageH - nextTop - marginY;
+  const sliceNextPx = Math.floor(nextAvailPt * pxPerPt);
+
+  // Offscreen canvas for slicing
+  const sliceCanvas = document.createElement("canvas");
+  const ctx = sliceCanvas.getContext("2d");
+
+  let renderedPx = 0;
+  let firstPage = true;
+
+  while (renderedPx < fullH) {
+    const sliceHeightPx = firstPage
+      ? Math.min(sliceFirstPx, fullH - renderedPx)
+      : Math.min(sliceNextPx, fullH - renderedPx);
+
+    sliceCanvas.width = fullW;
+    sliceCanvas.height = sliceHeightPx;
+    ctx.drawImage(
+      canvas,
+      0, renderedPx, fullW, sliceHeightPx,
+      0, 0, fullW, sliceHeightPx
+    );
+
+    if (!firstPage) pdf.addPage();
+
+    // Header (only on the first page of the section)
+    if (firstPage) {
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(12);
+      pdf.text(title || "Section", marginX, marginY + 12);
+    }
+
+    const imgData = sliceCanvas.toDataURL("image/png");
+    const drawTop = firstPage ? firstTop : nextTop;
+    const sliceHeightPt = sliceHeightPx / pxPerPt;
+
+    pdf.addImage(imgData, "PNG", marginX, drawTop, imgW, sliceHeightPt);
+    addFooter(pdf, pdf.getNumberOfPages());
+
+    renderedPx += sliceHeightPx;
+    firstPage = false;
+  }
+
+  // restore collapsibles
+  collapsibles.forEach((n, i) => {
+    n.className = originalClasses[i];
+    n.style.overflow = "";
+  });
+}
 
 export async function exportSummaryAsPDF({ container, docTitle = "S32 Insights" }) {
   if (!container) return;
 
-  // 1) Temporarily expand scroll/overflow for full capture
-  const originalStyle = {
-    maxHeight: container.style.maxHeight,
-    overflow: container.style.overflow,
-  };
+  // Temporarily remove overflow/height limits from the container
+  const original = { maxHeight: container.style.maxHeight, overflow: container.style.overflow };
   container.style.maxHeight = "none";
   container.style.overflow = "visible";
 
-  // 2) Expand any collapsibles
-  const collapsibles = Array.from(container.querySelectorAll("[data-collapsible]"));
-  const originalClasses = collapsibles.map((el) => el.className);
-  collapsibles.forEach((el) => {
-    el.className = el.className
-      .replace(/max-h-\[.*?\]/g, "max-h-[99999px]")
-      .replace(/opacity-0/g, "opacity-100");
-    el.style.overflow = "visible";
-  });
-
-  await new Promise((r) => setTimeout(r, 150));
-
-  // 3) Render to canvas
-  const canvas = await html2canvas(container, { scale: 2, backgroundColor: "#ffffff", useCORS: true });
-  const fullWidth = canvas.width;
-  const fullHeight = canvas.height;
-
-  // 4) Slice long canvas into A4 pages
+  // Build PDF
   const pdf = new jsPDF("p", "pt", "a4");
-  const pageW = pdf.internal.pageSize.getWidth();
-  const pageH = pdf.internal.pageSize.getHeight();
-  const margin = 20;
-  const imgW = pageW - margin * 2;
-  const imgH = (imgW / fullWidth) * fullHeight; // total image height if scaled to page width
-  const pxPerPt = fullWidth / imgW; // canvas px per PDF point (width-based)
+  const w = pdf.internal.pageSize.getWidth();
+  const marginX = 20;
 
-  // Title
+  // Cover
   pdf.setFont("helvetica", "bold");
-  pdf.setFontSize(14);
-  pdf.text(docTitle, margin, margin);
-  let yPos = margin + 20;
+  pdf.setFontSize(16);
+  pdf.text(docTitle, marginX, 60);
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(10);
+  pdf.text(`Generated: ${new Date().toLocaleString()}`, marginX, 80);
+  addFooter(pdf, 1);
 
-  // Create an offscreen canvas to slice
-  const sliceCanvas = document.createElement("canvas");
-  const sliceCtx = sliceCanvas.getContext("2d");
-  const sliceHeightPx = Math.floor((pageH - yPos - margin) * pxPerPt); // how many canvas px fit on first page
-
-  let rendered = 0;
-  let first = true;
-
-  while (rendered < fullHeight) {
-    const curSliceHeight = Math.min(sliceHeightPx, fullHeight - rendered);
-    sliceCanvas.width = fullWidth;
-    sliceCanvas.height = curSliceHeight;
-    sliceCtx.drawImage(canvas, 0, rendered, fullWidth, curSliceHeight, 0, 0, fullWidth, curSliceHeight);
-
-    const imgData = sliceCanvas.toDataURL("image/png");
-    const sliceHeightPt = curSliceHeight / pxPerPt;
-
-    pdf.addImage(imgData, "PNG", margin, yPos, imgW, sliceHeightPt);
-
-    rendered += curSliceHeight;
-
-    if (rendered < fullHeight) {
-      pdf.addPage();
-      // subsequent pages start at margin without title
-      yPos = margin;
-    } else {
-      break;
-    }
+  // Find section cards
+  const cards = Array.from(container.querySelectorAll("[data-section-card]"));
+  for (let i = 0; i < cards.length; i++) {
+    const el = cards[i];
+    const title = el.getAttribute("data-section-title") || `Section ${i + 1}`;
+    await renderElementToPages({ pdf, el, title });
   }
 
+  // Raw JSON panel if expanded (optional): skip by default.
+
+  // Save
   pdf.save(`${docTitle.replace(/\s+/g, "_")}.pdf`);
 
-  // 5) Restore styles
-  collapsibles.forEach((el, i) => {
-    el.className = originalClasses[i];
-    el.style.overflow = "";
-  });
-  container.style.maxHeight = originalStyle.maxHeight;
-  container.style.overflow = originalStyle.overflow;
+  // Restore container styles
+  container.style.maxHeight = original.maxHeight;
+  container.style.overflow = original.overflow;
 }
