@@ -1,15 +1,18 @@
-// src/utils/pdfExport.js
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
-/**
- * Export a scrollable summary area to a multi-page PDF.
- * Expects `container` to be a DOM node that contains your summary.
- */
 export async function exportSummaryAsPDF({ container, docTitle = "S32 Insights" }) {
   if (!container) return;
 
-  // Expand any collapsible sections before capture (we use data-collapsible marker)
+  // 1) Temporarily expand scroll/overflow for full capture
+  const originalStyle = {
+    maxHeight: container.style.maxHeight,
+    overflow: container.style.overflow,
+  };
+  container.style.maxHeight = "none";
+  container.style.overflow = "visible";
+
+  // 2) Expand any collapsibles
   const collapsibles = Array.from(container.querySelectorAll("[data-collapsible]"));
   const originalClasses = collapsibles.map((el) => el.className);
   collapsibles.forEach((el) => {
@@ -19,51 +22,53 @@ export async function exportSummaryAsPDF({ container, docTitle = "S32 Insights" 
     el.style.overflow = "visible";
   });
 
-  await new Promise((r) => setTimeout(r, 150)); // allow layout to settle
+  await new Promise((r) => setTimeout(r, 150));
 
-  const canvas = await html2canvas(container, {
-    scale: 2,
-    useCORS: true,
-    backgroundColor: "#ffffff",
-    // You can tweak width/height if your container is responsive
-  });
-  const imgData = canvas.toDataURL("image/png");
+  // 3) Render to canvas
+  const canvas = await html2canvas(container, { scale: 2, backgroundColor: "#ffffff", useCORS: true });
+  const fullWidth = canvas.width;
+  const fullHeight = canvas.height;
 
+  // 4) Slice long canvas into A4 pages
   const pdf = new jsPDF("p", "pt", "a4");
-  const pageWidth = pdf.internal.pageSize.getWidth();
-  const pageHeight = pdf.internal.pageSize.getHeight();
+  const pageW = pdf.internal.pageSize.getWidth();
+  const pageH = pdf.internal.pageSize.getHeight();
+  const margin = 20;
+  const imgW = pageW - margin * 2;
+  const imgH = (imgW / fullWidth) * fullHeight; // total image height if scaled to page width
+  const pxPerPt = fullWidth / imgW; // canvas px per PDF point (width-based)
 
-  const marginX = 20;
-  const marginY = 20;
-
-  const imgWidth = pageWidth - marginX * 2;
-  const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-  // Title page header
+  // Title
   pdf.setFont("helvetica", "bold");
   pdf.setFontSize(14);
-  pdf.text(docTitle, marginX, marginY);
-  let positionY = marginY + 20;
+  pdf.text(docTitle, margin, margin);
+  let yPos = margin + 20;
 
-  // If image exceeds remaining height, add pages as needed
-  let remaining = imgHeight;
-  let currentY = positionY;
+  // Create an offscreen canvas to slice
+  const sliceCanvas = document.createElement("canvas");
+  const sliceCtx = sliceCanvas.getContext("2d");
+  const sliceHeightPx = Math.floor((pageH - yPos - margin) * pxPerPt); // how many canvas px fit on first page
 
-  while (remaining > 0) {
-    const renderHeight = Math.min(remaining, pageHeight - currentY - marginY);
-    pdf.addImage(
-      imgData,
-      "PNG",
-      marginX,
-      currentY,
-      imgWidth,
-      imgHeight
-    );
-    remaining -= (pageHeight - currentY - marginY);
-    if (remaining > 0) {
+  let rendered = 0;
+  let first = true;
+
+  while (rendered < fullHeight) {
+    const curSliceHeight = Math.min(sliceHeightPx, fullHeight - rendered);
+    sliceCanvas.width = fullWidth;
+    sliceCanvas.height = curSliceHeight;
+    sliceCtx.drawImage(canvas, 0, rendered, fullWidth, curSliceHeight, 0, 0, fullWidth, curSliceHeight);
+
+    const imgData = sliceCanvas.toDataURL("image/png");
+    const sliceHeightPt = curSliceHeight / pxPerPt;
+
+    pdf.addImage(imgData, "PNG", margin, yPos, imgW, sliceHeightPt);
+
+    rendered += curSliceHeight;
+
+    if (rendered < fullHeight) {
       pdf.addPage();
-      // after first page, no title text
-      currentY = marginY;
+      // subsequent pages start at margin without title
+      yPos = margin;
     } else {
       break;
     }
@@ -71,9 +76,11 @@ export async function exportSummaryAsPDF({ container, docTitle = "S32 Insights" 
 
   pdf.save(`${docTitle.replace(/\s+/g, "_")}.pdf`);
 
-  // restore collapsibles
+  // 5) Restore styles
   collapsibles.forEach((el, i) => {
     el.className = originalClasses[i];
     el.style.overflow = "";
   });
+  container.style.maxHeight = originalStyle.maxHeight;
+  container.style.overflow = originalStyle.overflow;
 }

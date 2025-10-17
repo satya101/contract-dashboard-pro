@@ -15,7 +15,6 @@ import {
   clearHistory,
 } from "./services/storage.js";
 
-
 export default function App() {
   const [summary, setSummary] = useState(null);
   const [fileName, setFileName] = useState("");
@@ -26,7 +25,6 @@ export default function App() {
 
   const summaryRef = useRef(null);
 
-  // Restore last summary on refresh
   useEffect(() => {
     const last = loadLastSummary();
     if (last) {
@@ -45,12 +43,8 @@ export default function App() {
       setSummary(s);
       setFileName(res?.file || file.name || "Uploaded Document");
       saveLastSummary({ summary: s, fileName: res?.file || file.name });
-      const updated = saveToHistory({
-        name: res?.file || file.name,
-        summary: s,
-      });
+      const updated = saveToHistory({ name: res?.file || file.name, summary: s });
       setHistory(updated);
-      // smooth scroll to summary
       setTimeout(() => {
         document.querySelector("#summary-root")?.scrollIntoView({ behavior: "smooth" });
       }, 200);
@@ -73,10 +67,7 @@ export default function App() {
     }, 150);
   };
 
-  const handleClearHistory = () => {
-    const updated = clearHistory();
-    setHistory(updated);
-  };
+  const handleClearHistory = () => setHistory(clearHistory());
 
   const handleReset = () => {
     setSummary(null);
@@ -86,10 +77,7 @@ export default function App() {
 
   const handleExportPDF = async () => {
     if (!summaryRef.current) return;
-    await exportSummaryAsPDF({
-      container: summaryRef.current,
-      docTitle: fileName || "S32 Insights",
-    });
+    await exportSummaryAsPDF({ container: summaryRef.current, docTitle: fileName || "S32 Insights" });
   };
 
   const handleShareEmail = async ({ to }) => {
@@ -106,20 +94,16 @@ S32 Insights Portal`;
     try {
       const resp = await shareEmail({ to, subject, body });
       if (!resp?.sent) {
-        // SMTP not configured -> fallback to mailto
-        window.location.href = `mailto:${encodeURIComponent(
-          to
-        )}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        window.location.href = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
       }
       return true;
-    } catch (e) {
+    } catch {
       return false;
     }
   };
 
   const handleAsk = async (question) => {
     if (!question?.trim() || questionsLeft <= 0) return { answer: "Limit reached." };
-    // Keep context lean to avoid giant payloads
     const context = JSON.stringify(summary || {}, null, 2).slice(0, 12000);
     const res = await askAssistant({ question, context });
     setQuestionsLeft((n) => Math.max(0, n - 1));
@@ -133,11 +117,7 @@ S32 Insights Portal`;
           <h1 className="text-xl sm:text-2xl font-bold">S32 Insights Portal</h1>
           <div className="flex items-center gap-3 text-sm">
             <span className="text-gray-500">Questions left: {questionsLeft}</span>
-            <button
-              onClick={handleClearHistory}
-              className="px-3 py-1 border rounded hover:bg-gray-50"
-              title="Clear local audit history"
-            >
+            <button onClick={handleClearHistory} className="px-3 py-1 border rounded hover:bg-gray-50" title="Clear local audit history">
               Clear History
             </button>
           </div>
@@ -145,7 +125,6 @@ S32 Insights Portal`;
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-6 grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Left: Upload & Audit list */}
         <aside className="lg:col-span-1 space-y-6">
           <div className="bg-white border rounded-lg p-4">
             <h2 className="font-semibold mb-3">Upload</h2>
@@ -154,11 +133,10 @@ S32 Insights Portal`;
           </div>
 
           <div className="bg-white border rounded-lg p-4">
-            <AuditList onSelect={handleOpenFromHistory} />
+            <AuditList docs={history} onSelect={handleOpenFromHistory} />
           </div>
         </aside>
 
-        {/* Right: Summary & actions */}
         <section className="lg:col-span-3 space-y-4">
           {loading && (
             <div className="bg-white border rounded-lg p-8 flex items-center justify-center">
@@ -168,13 +146,8 @@ S32 Insights Portal`;
 
           {!loading && summary && (
             <>
-              <ShareBar
-                fileName={fileName}
-                onExportPDF={handleExportPDF}
-                onShareEmail={handleShareEmail}
-              />
+              <ShareBar fileName={fileName} onExportPDF={handleExportPDF} onShareEmail={handleShareEmail} />
               <AuditSection ref={summaryRef} summary={summary} onReset={handleReset} />
-              <ChatAssist ask={handleAsk} />
             </>
           )}
 
@@ -183,6 +156,8 @@ S32 Insights Portal`;
               Upload a PDF or DOCX to start. Your last summary will reappear after refresh.
             </div>
           )}
+
+          {!loading && summary && <ChatAssist ask={handleAsk} />}
         </section>
       </main>
     </div>
