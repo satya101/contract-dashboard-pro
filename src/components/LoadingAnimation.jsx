@@ -1,18 +1,14 @@
-import React from 'react';
+import React from "react";
 
-export default function LoadingAnimation() {
+export default function LoadingAnimation({ label = "Loading..." }) {
   return (
-    <div className="mt-10 flex flex-col items-center gap-3 text-gray-700">
+    <div className="flex flex-col items-center">
       <div className="flex gap-2">
-        <span className="h-3 w-3 rounded-full bg-blue-600 animate-bounce [animation-delay:-0.2s]"></span>
-        <span className="h-3 w-3 rounded-full bg-blue-600 animate-bounce [animation-delay:-0.1s]"></span>
-        <span className="h-3 w-3 rounded-full bg-blue-600 animate-bounce"></span>
+        <span className="w-3 h-3 rounded-full bg-blue-600 animate-bounce [animation-delay:-0.3s]" />
+        <span className="w-3 h-3 rounded-full bg-blue-600 animate-bounce [animation-delay:-0.15s]" />
+        <span className="w-3 h-3 rounded-full bg-blue-600 animate-bounce" />
       </div>
-      <div className="text-sm">Uploading & processing your contract…</div>
-      <div className="w-48 h-1 bg-gray-200 overflow-hidden rounded">
-        <div className="h-full w-1/2 bg-blue-500 animate-[move_1.4s_linear_infinite]"></div>
-      </div>
-      <style>{`@keyframes move {0%{transform:translateX(-100%)}100%{transform:translateX(200%)}}`}</style>
+      <div className="mt-3 text-sm text-gray-600">{label}</div>
     </div>
   );
 }

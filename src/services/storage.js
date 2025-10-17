@@ -1,39 +1,44 @@
-const KEY = "contractHistory";
+const KEY_HISTORY = "s32.history";
+const KEY_LAST = "s32.last";
+
+const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
 
 export function loadHistory() {
   try {
-    const raw = localStorage.getItem(KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch (e) {
-    console.warn("Failed to load history", e);
+    return JSON.parse(localStorage.getItem(KEY_HISTORY) || "[]");
+  } catch {
     return [];
   }
 }
 
-export function saveHistory(list) {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(list));
-  } catch (e) {
-    console.warn("Failed to save history", e);
-  }
-}
-
-export function upsertDoc(doc) {
-  const list = loadHistory();
-  const idx = list.findIndex((d) => d.id === doc.id);
-  if (idx >= 0) list[idx] = doc;
-  else list.unshift(doc);
-  saveHistory(list);
-  return list;
+export function saveToHistory({ name, summary }) {
+  const item = { id: uid(), name, uploadedAt: Date.now(), summary };
+  const cur = loadHistory();
+  const next = [item, ...cur].slice(0, 50);
+  localStorage.setItem(KEY_HISTORY, JSON.stringify(next));
+  return next;
 }
 
 export function removeDoc(id) {
-  const list = loadHistory().filter((d) => d.id !== id);
-  saveHistory(list);
-  return list;
+  const cur = loadHistory();
+  const next = cur.filter((x) => x.id !== id);
+  localStorage.setItem(KEY_HISTORY, JSON.stringify(next));
+  return next;
 }
 
 export function clearHistory() {
-  saveHistory([]);
+  localStorage.setItem(KEY_HISTORY, JSON.stringify([]));
   return [];
+}
+
+export function saveLastSummary(obj) {
+  localStorage.setItem(KEY_LAST, JSON.stringify(obj));
+}
+
+export function loadLastSummary() {
+  try {
+    return JSON.parse(localStorage.getItem(KEY_LAST) || "null");
+  } catch {
+    return null;
+  }
 }

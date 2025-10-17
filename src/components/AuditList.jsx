@@ -1,21 +1,16 @@
-// src/components/AuditList.jsx
 import React from "react";
-import { loadHistory, removeDoc, clearHistory } from "../services/storage";
+import { loadHistory, removeDoc } from "../services/storage.js";
 
 export default function AuditList({ onSelect }) {
   const [docs, setDocs] = React.useState(loadHistory());
 
   const handleOpen = (doc) => onSelect?.(doc);
   const handleRemove = (id) => setDocs(removeDoc(id));
-  const handleClear = () => setDocs(clearHistory());
 
   return (
-    <div className="bg-white border rounded-lg p-4">
+    <div>
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-semibold">Audit History</h3>
-        <button onClick={handleClear} className="text-xs text-red-600 hover:underline">
-          Clear all
-        </button>
       </div>
       {docs.length === 0 && (
         <p className="text-sm text-gray-500">No previous uploads yet.</p>
