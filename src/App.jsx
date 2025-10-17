@@ -5,6 +5,7 @@ import ShareBar from "./components/ShareBar.jsx";
 import AuditList from "./components/AuditList.jsx";
 import LoadingAnimation from "./components/LoadingAnimation.jsx";
 import ChatAssist from "./components/ChatAssist.jsx";
+import { exportSummaryAsPDF } from "./utils/pdfExport.js";
 import { uploadFile, askAssistant, shareEmail } from "./services/API.js";
 import {
   saveToHistory,
@@ -13,7 +14,7 @@ import {
   saveLastSummary,
   clearHistory,
 } from "./services/storage.js";
-import { exportSummaryAsPDF } from "./utils/pdfExport.js";
+
 
 export default function App() {
   const [summary, setSummary] = useState(null);
