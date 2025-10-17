@@ -1,3 +1,4 @@
+// src/App.jsx
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -8,9 +9,10 @@ import ShareBar from "./components/ShareBar.jsx";
 import AuditList from "./components/AuditList.jsx";
 import LoadingAnimation from "./components/LoadingAnimation.jsx";
 import ChatAssist from "./components/ChatAssist.jsx";
+import FeedbackPanel from "./components/FeedbackPanel.jsx";
 
 // Services / utils
-import { uploadFile, askAssistant, shareEmail } from "./services/API.js";
+import { uploadFile, askAssistant, shareEmail, submitFeedback } from "./services/API.js";
 import { exportSummaryAsPDF } from "./utils/pdfExport.js";
 import {
   saveToHistory,
@@ -32,7 +34,7 @@ export default function App() {
 
   const summaryRef = useRef(null);
 
-  // Restore last summary on refresh (we also redirect to landing on explicit reload below)
+  // Restore last summary on mount (so a normal refresh keeps the content visible)
   useEffect(() => {
     const last = loadLastSummary();
     if (last) {
@@ -40,16 +42,6 @@ export default function App() {
       setFileName(last.fileName || "");
     }
   }, []);
-
-  // If the user refreshes the dashboard route, navigate back to landing.
-  // History & last summary remain in localStorage, so nothing is lost.
-  useEffect(() => {
-    const nav = performance.getEntriesByType("navigation")[0];
-    const isReload = nav && nav.type === "reload";
-    if (isReload) {
-      navigate("/", { replace: true });
-    }
-  }, [navigate]);
 
   const handleUploadSelected = async (file) => {
     if (!file) return;
@@ -64,7 +56,6 @@ export default function App() {
       const updated = saveToHistory({ name: res?.file || file.name, summary: s });
       setHistory(updated);
 
-      // Smooth scroll to the summary
       setTimeout(() => {
         document.querySelector("#summary-root")?.scrollIntoView({ behavior: "smooth" });
       }, 200);
@@ -117,7 +108,6 @@ S32 Insights Portal`;
     try {
       const resp = await shareEmail({ to, subject, body });
       if (!resp?.sent) {
-        // SMTP not configured -> use mailto fallback
         window.location.href = `mailto:${encodeURIComponent(
           to
         )}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
@@ -134,6 +124,20 @@ S32 Insights Portal`;
     const res = await askAssistant({ question, context });
     setQuestionsLeft((n) => Math.max(0, n - 1));
     return res;
+  };
+
+  const handleSubmitFeedback = async ({ rating, message, email }) => {
+    try {
+      await submitFeedback({
+        rating,
+        message,
+        email,
+        docName: fileName || "Unknown",
+      });
+      alert("Thanks for your feedback!");
+    } catch (e) {
+      alert("Could not submit feedback. Please try again.");
+    }
   };
 
   return (
@@ -192,6 +196,7 @@ S32 Insights Portal`;
               />
               <AuditSection ref={summaryRef} summary={summary} onReset={handleReset} />
               <ChatAssist ask={handleAsk} />
+              <FeedbackPanel onSubmit={handleSubmitFeedback} />
             </>
           )}
 
