@@ -1,34 +1,28 @@
 {
-  "name": "contract-dashboard",
-  "version": "1.2.0",
-  "private": true,
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:netlify": "vite build --debug --mode production",
     "preview": "vite preview --port 5173"
   },
-  "engines": {
-    "node": ">=18.18.0 <21 || >=22"
-  },
   "dependencies": {
-    "react": "18.3.1",
-    "react-dom": "18.3.1",
-    "react-router-dom": "6.26.2",
-
-    "@mui/material": "5.15.20",
-    "@mui/icons-material": "5.15.20",
     "@emotion/react": "11.13.3",
     "@emotion/styled": "11.13.0",
-
+    "@mui/icons-material": "5.15.20",
+    "@mui/material": "5.15.20",
     "axios": "1.7.7",
+    "html2canvas": "1.4.1",
     "jspdf": "2.5.2",
-    "html2canvas": "1.4.1"
+    "lottie-react": "^2.4.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-router-dom": "6.26.2"
   },
   "devDependencies": {
-    "vite": "5.4.10",
     "@vitejs/plugin-react": "4.3.1",
-    "tailwindcss": "3.4.14",
+    "autoprefixer": "10.4.20",
     "postcss": "8.4.47",
-    "autoprefixer": "10.4.20"
+    "tailwindcss": "3.4.14",
+    "vite": "5.4.10"
   }
 }

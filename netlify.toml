@@ -1,12 +1,8 @@
-# netlify.toml  (place in repo root)
+# netlify.toml
 [build]
-  command = "npm run build"
+  command = "npm ci && npm run build:netlify"
   publish = "dist"
 
 [build.environment]
-  NODE_VERSION = "18.19.0"    # Known good with Vite 5
+  NODE_VERSION = "18.19.0"
   VITE_BACKEND_URL = "https://contract-backend-production-abf2.up.railway.app"
-
-# Optional: if you ever add functions, keep esbuild
-[functions]
-  node_bundler = "esbuild"
