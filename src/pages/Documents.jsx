@@ -1,27 +1,41 @@
 // src/pages/Documents.jsx
 import React, { useMemo } from "react";
 import {
-  Typography, Card, CardContent, IconButton, Stack, TextField, Tooltip
+  Typography, Card, CardContent, IconButton, Stack, TextField, Tooltip,
+  FormControl, InputLabel, Select, MenuItem
 } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import ShareIcon from "@mui/icons-material/Share";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 
-import { loadHistory, saveLastSummary, saveToHistory, clearHistory } from "../services/storage.js";
+import { loadHistory, saveLastSummary, clearHistory } from "../services/storage.js";
 import { exportSummaryAsPDF } from "../utils/pdfExport.js";
-import { shareEmail } from "../services/API.js";
 import { useNavigate } from "react-router-dom";
+
+const withinDays = (ts, days) => {
+  if (!days) return true;
+  const d = Number(ts || 0);
+  if (!d) return false;
+  const cutoff = Date.now() - days * 86400000;
+  return d >= cutoff;
+};
 
 export default function Documents() {
   const navigate = useNavigate();
   const [query, setQuery] = React.useState("");
+  const [range, setRange] = React.useState("any"); // any|7|30|90
   const [docs, setDocs] = React.useState(loadHistory());
 
   const filtered = useMemo(() => {
-    if (!query.trim()) return docs;
-    return docs.filter(d => (d.name || "").toLowerCase().includes(query.toLowerCase()));
-  }, [docs, query]);
+    const q = query.trim().toLowerCase();
+    const days = range === "any" ? 0 : Number(range);
+    return docs.filter((d) => {
+      const nameOK = !q || (d.name || "").toLowerCase().includes(q);
+      const dateOK = withinDays(d.ts, days);
+      return nameOK && dateOK;
+    });
+  }, [docs, query, range]);
 
   const open = (d) => {
     saveLastSummary({ summary: d.summary, fileName: d.name });
@@ -29,21 +43,21 @@ export default function Documents() {
   };
 
   const download = async (d) => {
+    // make a temporary container for PDF export (re-uses util that snapshots DOM)
     const tmp = document.createElement("div");
     tmp.style.position = "absolute"; tmp.style.left = "-9999px";
+    tmp.innerHTML = `<pre style="font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;padding:16px;">${JSON.stringify(d.summary, null, 2)}</pre>`;
     document.body.appendChild(tmp);
-    tmp.innerText = JSON.stringify(d.summary, null, 2);
     await exportSummaryAsPDF({ container: tmp, docTitle: d.name || "Summary" });
     document.body.removeChild(tmp);
   };
 
-  const share = async (d) => {
+  const share = (d) => {
     const to = prompt("Send report to (email):");
     if (!to) return;
-    const subject = `S32 Insights Summary – ${d.name}`;
-    const body = JSON.stringify(d.summary, null, 2);
-    const resp = await shareEmail({ to, subject, body }).catch(()=>null);
-    if (!resp?.sent) window.location.href = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    const subject = `S32 Insights Summary — ${d.name}`;
+    const text = JSON.stringify(d.summary, null, 2);
+    window.location.href = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`;
   };
 
   const removeAll = () => {
@@ -60,8 +74,17 @@ export default function Documents() {
         Secure, organized, and intelligent document storage with comprehensive version control and collaboration tools.
       </Typography>
 
-      <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+      <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mb: 2 }}>
         <TextField size="small" placeholder="Search by document name" value={query} onChange={(e)=>setQuery(e.target.value)} />
+        <FormControl size="small" sx={{ minWidth: 180 }}>
+          <InputLabel>Date filter</InputLabel>
+          <Select label="Date filter" value={range} onChange={(e)=>setRange(e.target.value)}>
+            <MenuItem value="any">Any time</MenuItem>
+            <MenuItem value="7">Last 7 days</MenuItem>
+            <MenuItem value="30">Last 30 days</MenuItem>
+            <MenuItem value="90">Last 90 days</MenuItem>
+          </Select>
+        </FormControl>
         <Tooltip title="Clear all history">
           <IconButton onClick={removeAll}><DeleteOutlineIcon /></IconButton>
         </Tooltip>
@@ -79,22 +102,16 @@ export default function Documents() {
                   </Typography>
                 </div>
                 <Stack direction="row" spacing={1}>
-                  <Tooltip title="View">
-                    <IconButton onClick={()=>open(d)}><VisibilityIcon /></IconButton>
-                  </Tooltip>
-                  <Tooltip title="Download PDF">
-                    <IconButton onClick={()=>download(d)}><DownloadIcon /></IconButton>
-                  </Tooltip>
-                  <Tooltip title="Share">
-                    <IconButton onClick={()=>share(d)}><ShareIcon /></IconButton>
-                  </Tooltip>
+                  <Tooltip title="View"><IconButton onClick={()=>open(d)}><VisibilityIcon /></IconButton></Tooltip>
+                  <Tooltip title="Download PDF"><IconButton onClick={()=>download(d)}><DownloadIcon /></IconButton></Tooltip>
+                  <Tooltip title="Share"><IconButton onClick={()=>share(d)}><ShareIcon /></IconButton></Tooltip>
                 </Stack>
               </div>
             </CardContent>
           </Card>
         ))}
         {filtered.length === 0 && (
-          <Card variant="outlined"><CardContent>No documents found.</CardContent></Card>
+          <Card variant="outlined"><CardContent>No documents match your filters.</CardContent></Card>
         )}
       </div>
     </div>

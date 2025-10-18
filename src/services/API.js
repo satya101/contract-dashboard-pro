@@ -1,48 +1,24 @@
-const API_BASE = (import.meta.env.VITE_API_BASE || "").replace(/\/$/, "");
-
-async function toJsonSafe(res) {
-  try { return await res.json(); } catch { return null; }
-}
+// src/services/API.js
+const BASE = import.meta.env.VITE_API_BASE || "https://contract-backend-production-abf2.up.railway.app";
 
 export async function uploadFile(file) {
-  if (!API_BASE) throw new Error("VITE_API_BASE not set");
-  const fd = new FormData();
-  fd.append("file", file);
-  const res = await fetch(`${API_BASE}/upload`, { method: "POST", body: fd });
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch(`${BASE}/upload`, { method: "POST", body: form });
   if (!res.ok) {
-    const j = await toJsonSafe(res);
-    throw new Error(j?.detail || `Upload failed (${res.status})`);
+    const msg = await res.text().catch(() => res.statusText);
+    throw new Error(msg || "Upload failed");
   }
   return res.json();
 }
 
-export async function askAssistant({ question, context }) {
-  const res = await fetch(`${API_BASE}/ask`, {
+export async function shareEmail({ to, subject, html, text }) {
+  const payload = { to, subject, html, text };
+  const res = await fetch(`${BASE}/share-email`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ question, context }),
+    body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error("Ask failed");
+  if (!res.ok) return null;
   return res.json();
-}
-
-export async function shareEmail({ to, subject, body }) {
-  const res = await fetch(`${API_BASE}/share-email`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ to, subject, body }),
-  });
-  if (!res.ok) throw new Error("Email failed");
-  return res.json();
-}
-
-export async function submitFeedback({ rating, message, email, docName }) {
-  const res = await fetch(`${API_BASE}/feedback`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ rating, message, email, docName }),
-  });
-  const j = await toJsonSafe(res);
-  if (!res.ok) throw new Error(j?.detail || "Feedback failed");
-  return j || { ok: true };
 }
