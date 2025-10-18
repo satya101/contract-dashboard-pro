@@ -1,32 +1,12 @@
 import React from "react";
 import {
   AppBar, Toolbar, Container, Box, Typography, Button,
-  Grid, Card, CardContent, Stack, Chip, Avatar
+  Stack, Chip
 } from "@mui/material";
-import GavelIcon from "@mui/icons-material/Gavel";
-import SecurityIcon from "@mui/icons-material/Security";
-import TimelineIcon from "@mui/icons-material/Timeline";
-import InsightsIcon from "@mui/icons-material/Insights";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import AnimatedLegalBackground from "../components/AnimatedLegalBackground.jsx";
 import HowItWorks from "../components/HowItWorks.jsx";
 import { Link as RouterLink } from "react-router-dom";
-
-function Feature({ icon, title, desc }) {
-  return (
-    <Card variant="outlined" sx={{ height: "100%", borderRadius: 3 }}>
-      <CardContent>
-        <Box sx={{ mb: 1 }}>{icon}</Box>
-        <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
-          {title}
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          {desc}
-        </Typography>
-      </CardContent>
-    </Card>
-  );
-}
 
 export default function LandingPage() {
   return (
@@ -40,10 +20,8 @@ export default function LandingPage() {
           <Stack direction="row" spacing={1}>
             <Button component={RouterLink} to="/" color="inherit">Home</Button>
             <Button component={RouterLink} to="/dashboard" color="inherit">AI Analysis</Button>
-            <Button color="inherit">Results</Button>
-            <Button color="inherit">Professional</Button>
-            <Button color="inherit">Documents</Button>
-            <Button color="inherit">Pricing</Button>
+            <Button component={RouterLink} to="/results" color="inherit">Results</Button>
+            <Button component={RouterLink} to="/pricing" color="inherit">Pricing</Button>
           </Stack>
         </Toolbar>
       </AppBar>
@@ -66,93 +44,24 @@ export default function LandingPage() {
               }}>Property Contract</Box>
             </Typography>
             <Typography variant="h6" color="text.secondary" sx={{ maxWidth: 900 }}>
-              Your AI legal advisor transforms complex Section 32 contracts into clear, actionable insights.
-              Get confidence in minutes, not days.
+              Section 32-aware AI turns complex contracts into clear, actionable insights.
+              Confidence in minutes, not days.
             </Typography>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="center">
               <Button component={RouterLink} to="/dashboard" size="large" variant="contained" endIcon={<ArrowForwardIcon />}>
                 Upload Contract Now
               </Button>
-              <Button size="large" variant="outlined">Watch Demo</Button>
-            </Stack>
-            <Stack direction="row" spacing={3} sx={{ pt: 1 }} justifyContent="center">
-              <Typography variant="body2" color="text.secondary">🟢 99.7% Accuracy Rate</Typography>
-              <Typography variant="body2" color="text.secondary">🟢 Bank-Grade Security</Typography>
-              <Typography variant="body2" color="text.secondary">🟢 Results in 5 Minutes</Typography>
+              <Button size="large" variant="outlined" href="#how">See How It Works</Button>
             </Stack>
           </Stack>
         </Container>
       </Box>
 
-      {/* STEPS UPLOAD (hero-like module) */}
-      <Container maxWidth="lg" sx={{ py: { xs: 6, md: 8 } }}>
-        <Typography variant="h4" sx={{ fontWeight: 800, textAlign: "center", mb: 4 }}>
-          Upload Your Section 32 Contract
-        </Typography>
-        {/* You already have the UploadZone on the /dashboard page; keep the flow there. */}
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={4}>
-            <Feature icon={<GavelIcon color="primary" fontSize="large" />} title="Upload Document"
-              desc="Drop a PDF/DOCX securely with instant verification." />
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <Feature icon={<InsightsIcon color="primary" fontSize="large" />} title="AI Processing"
-              desc="OCR, clause extraction, and legal reasoning with evidence tags." />
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <Feature icon={<TimelineIcon color="primary" fontSize="large" />} title="View Results"
-              desc="Readable summary, advanced details, export PDF or share via email." />
-          </Grid>
-        </Grid>
-      </Container>
-
-      {/* HOW IT WORKS (interactive) */}
+      {/* HOW IT WORKS – 3 CARDS IN ONE ROW */}
       <Box id="how" sx={{ py: { xs: 6, md: 8 }, bgcolor: "white", borderTop: 1, borderBottom: 1, borderColor: "divider" }}>
         <Container maxWidth="lg">
           <Typography variant="h4" sx={{ fontWeight: 800, mb: 3, textAlign: "center" }}>How it works</Typography>
-          <HowItWorks />
-        </Container>
-      </Box>
-
-      {/* TESTIMONIAL */}
-      <Container maxWidth="lg" sx={{ py: { xs: 6, md: 8 } }}>
-        <Card variant="outlined" sx={{ borderRadius: 3 }}>
-          <CardContent sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <Avatar sx={{ bgcolor: "primary.main" }}>A</Avatar>
-            <Box>
-              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                “Finally a Section 32 summary my clients actually understand.”
-              </Typography>
-              <Typography variant="body2" color="text.secondary">– Alex, Property Lawyer</Typography>
-            </Box>
-          </CardContent>
-        </Card>
-      </Container>
-
-      {/* CTA STRIP */}
-      <Box sx={{ py: 8, bgcolor: "primary.main", color: "primary.contrastText" }}>
-        <Container maxWidth="lg">
-          <Grid container spacing={3} alignItems="center">
-            <Grid item xs={12} md={8}>
-              <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
-                Ready to review your contract?
-              </Typography>
-              <Typography>Upload a PDF or DOCX and get a clear, customer-friendly summary in minutes.</Typography>
-            </Grid>
-            <Grid item xs={12} md="auto">
-              <Button
-                component={RouterLink}
-                to="/dashboard"
-                size="large"
-                variant="contained"
-                color="secondary"
-                sx={{ color: "primary.main", bgcolor: "common.white", "&:hover": { bgcolor: "grey.100" } }}
-                endIcon={<ArrowForwardIcon />}
-              >
-                Review Your Contract Now
-              </Button>
-            </Grid>
-          </Grid>
+          <HowItWorks /> {/* exactly 3 animated cards */}
         </Container>
       </Box>
 
