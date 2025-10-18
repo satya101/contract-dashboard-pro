@@ -3,14 +3,15 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-import App from "./App.jsx";                     // AI Analysis dashboard
+import SiteShell from "./layouts/SiteShell.jsx";
 import LandingPage from "./pages/LandingPage.jsx";
-import ResultsDemo from "./pages/ResultsDemo.jsx";
+import App from "./App.jsx";               // AI Analysis (upload screen)
+import Results from "./pages/Results.jsx"; // final parsed view
+import Documents from "./pages/Documents.jsx";
 import Pricing from "./pages/Pricing.jsx";
 
 import "./index.css";
 
-// MUI theme
 import {
   ThemeProvider,
   CssBaseline,
@@ -21,24 +22,11 @@ import {
 const theme = createTheme({
   palette: {
     mode: "light",
-    primary: { main: "#2563eb" },     // indigo-600
-    secondary: { main: "#06b6d4" },   // cyan-500
+    primary: { main: "#2563eb" },
+    secondary: { main: "#06b6d4" },
     background: { default: "#f9fafb", paper: "#ffffff" },
   },
   shape: { borderRadius: 12 },
-  typography: {
-    fontFamily: [
-      "-apple-system",
-      "BlinkMacSystemFont",
-      "Segoe UI",
-      "Roboto",
-      "Helvetica",
-      "Arial",
-      "Apple Color Emoji",
-      "Segoe UI Emoji",
-      "Segoe UI Symbol",
-    ].join(","),
-  },
   components: {
     MuiButton: { styleOverrides: { root: { textTransform: "none", fontWeight: 600 } } },
     MuiCard:   { styleOverrides: { root: { borderRadius: 14 } } },
@@ -48,16 +36,19 @@ const theme = createTheme({
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    {/* Ensures MUI styles load before Tailwind so they can be overridden cleanly */}
     <StyledEngineProvider injectFirst>
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <BrowserRouter>
+          {/* Shared navbar lives in SiteShell so nav is present on all pages */}
           <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/dashboard" element={<App />} />
-            <Route path="/results" element={<ResultsDemo />} />
-            <Route path="/pricing" element={<Pricing />} />
+            <Route element={<SiteShell />}>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/dashboard" element={<App />} />
+              <Route path="/results" element={<Results />} />
+              <Route path="/documents" element={<Documents />} />
+              <Route path="/pricing" element={<Pricing />} />
+            </Route>
           </Routes>
         </BrowserRouter>
       </ThemeProvider>

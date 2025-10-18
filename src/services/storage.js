@@ -1,29 +1,18 @@
-const KEY_HISTORY = "s32.history";
-const KEY_LAST = "s32.last";
-
-const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
+// src/services/storage.js
+const KEY_HISTORY = "auditHistory";
+const KEY_LAST = "lastSummary";
 
 export function loadHistory() {
-  try {
-    return JSON.parse(localStorage.getItem(KEY_HISTORY) || "[]");
-  } catch {
-    return [];
-  }
+  try { return JSON.parse(localStorage.getItem(KEY_HISTORY) || "[]"); }
+  catch { return []; }
 }
 
-export function saveToHistory({ name, summary }) {
-  const item = { id: uid(), name, uploadedAt: Date.now(), summary };
-  const cur = loadHistory();
-  const next = [item, ...cur].slice(0, 50);
-  localStorage.setItem(KEY_HISTORY, JSON.stringify(next));
-  return next;
-}
-
-export function removeDoc(id) {
-  const cur = loadHistory();
-  const next = cur.filter((x) => x.id !== id);
-  localStorage.setItem(KEY_HISTORY, JSON.stringify(next));
-  return next;
+export function saveToHistory(item) {
+  const hist = loadHistory();
+  const record = { ...item, ts: item.ts || Date.now() };
+  hist.unshift(record);
+  localStorage.setItem(KEY_HISTORY, JSON.stringify(hist.slice(0, 200)));
+  return hist;
 }
 
 export function clearHistory() {
@@ -32,13 +21,10 @@ export function clearHistory() {
 }
 
 export function saveLastSummary(obj) {
-  localStorage.setItem(KEY_LAST, JSON.stringify(obj));
+  localStorage.setItem(KEY_LAST, JSON.stringify({ ...obj, ts: Date.now() }));
 }
 
 export function loadLastSummary() {
-  try {
-    return JSON.parse(localStorage.getItem(KEY_LAST) || "null");
-  } catch {
-    return null;
-  }
+  try { return JSON.parse(localStorage.getItem(KEY_LAST) || "null"); }
+  catch { return null; }
 }
