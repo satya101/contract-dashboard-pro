@@ -1,20 +1,22 @@
 const API_BASE = (import.meta.env.VITE_API_BASE || "").replace(/\/$/, "");
 
+async function toJsonSafe(res) {
+  try { return await res.json(); } catch { return null; }
+}
+
 export async function uploadFile(file) {
   if (!API_BASE) throw new Error("VITE_API_BASE not set");
   const fd = new FormData();
   fd.append("file", file);
   const res = await fetch(`${API_BASE}/upload`, { method: "POST", body: fd });
   if (!res.ok) {
-    let detail = "";
-    try { const j = await res.json(); detail = j?.detail || JSON.stringify(j); } catch {}
-    throw new Error(detail || `Upload failed (${res.status})`);
+    const j = await toJsonSafe(res);
+    throw new Error(j?.detail || `Upload failed (${res.status})`);
   }
   return res.json();
 }
 
 export async function askAssistant({ question, context }) {
-  if (!API_BASE) throw new Error("VITE_API_BASE not set");
   const res = await fetch(`${API_BASE}/ask`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -25,7 +27,6 @@ export async function askAssistant({ question, context }) {
 }
 
 export async function shareEmail({ to, subject, body }) {
-  if (!API_BASE) throw new Error("VITE_API_BASE not set");
   const res = await fetch(`${API_BASE}/share-email`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -36,12 +37,12 @@ export async function shareEmail({ to, subject, body }) {
 }
 
 export async function submitFeedback({ rating, message, email, docName }) {
-  if (!API_BASE) throw new Error("VITE_API_BASE not set");
   const res = await fetch(`${API_BASE}/feedback`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ rating, message, email, docName }),
   });
-  if (!res.ok) throw new Error("Feedback failed");
-  return res.json();
+  const j = await toJsonSafe(res);
+  if (!res.ok) throw new Error(j?.detail || "Feedback failed");
+  return j || { ok: true };
 }
