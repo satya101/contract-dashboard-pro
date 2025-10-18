@@ -11,21 +11,24 @@
     "node": ">=18.18.0 <21 || >=22"
   },
   "dependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-router-dom": "^6.26.2",
-    "@mui/material": "^5.15.20",
-    "@emotion/react": "^11.13.3",
-    "@emotion/styled": "^11.13.0",
-    "axios": "^1.7.7",
-    "jspdf": "^2.5.2",
-    "html2canvas": "^1.4.1"
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-router-dom": "6.26.2",
+
+    "@mui/material": "5.15.20",
+    "@mui/icons-material": "5.15.20",
+    "@emotion/react": "11.13.3",
+    "@emotion/styled": "11.13.0",
+
+    "axios": "1.7.7",
+    "jspdf": "2.5.2",
+    "html2canvas": "1.4.1"
   },
   "devDependencies": {
-    "vite": "^5.4.10",
-    "@vitejs/plugin-react": "^4.3.1",
-    "tailwindcss": "^3.4.14",
-    "postcss": "^8.4.47",
-    "autoprefixer": "^10.4.20"
+    "vite": "5.4.10",
+    "@vitejs/plugin-react": "4.3.1",
+    "tailwindcss": "3.4.14",
+    "postcss": "8.4.47",
+    "autoprefixer": "10.4.20"
   }
 }
