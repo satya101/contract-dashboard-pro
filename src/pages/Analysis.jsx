@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { uploadFile } from "../services/api.js";
+// ...imports at top
+import { normalizeSummary } from "../utils/normalize.js";
 
 export default function Analysis() {
   const [file, setFile] = useState(null);
@@ -15,24 +17,28 @@ export default function Analysis() {
     try {
       setBusy(true);
       setProgress(10);
-      // call backend (ocr=true to help scanned PDFs)
       const res = await uploadFile(file, { ocr: true, onProgress: setProgress });
       setProgress(95);
-
-      // persist to audit history for Documents page
-      const audit = JSON.parse(localStorage.getItem("auditHistory") || "[]");
-      audit.unshift({
-        id: crypto.randomUUID(),
+  
+      // Normalize & persist
+      const normalized = normalizeSummary(res);
+      const id = crypto.randomUUID();
+      const entry = {
+        id,
         filename: file.name,
         when: new Date().toISOString(),
-        summary: res?.summary ?? null,
-      });
+        summary: normalized,
+        raw: res,
+      };
+      const audit = JSON.parse(localStorage.getItem("auditHistory") || "[]");
+      audit.unshift(entry);
       localStorage.setItem("auditHistory", JSON.stringify(audit));
-
-      // go to results
-      navigate("/results", { state: { summary: res?.summary || null, filename: file.name } });
+      localStorage.setItem("lastResultId", id);
+  
+      // Navigate with id so refresh still works
+      navigate(`/results?id=${encodeURIComponent(id)}`);
     } catch (e) {
-      console.error(e);
+      console.error("Upload failed:", e);
       alert("Upload failed. Please try again.");
     } finally {
       setBusy(false);
