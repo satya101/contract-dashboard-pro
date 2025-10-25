@@ -1,45 +1,46 @@
-// src/utils/pdfExport.js
 import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
+import "jspdf-autotable";
 
-// Export a scrollable DOM container to multipage A4 PDF
-export async function exportSummaryAsPDF({ container, docTitle = "S32_Insights_Report" }) {
-  // ensure all details are visible
-  const prev = container.style.maxHeight;
-  container.style.maxHeight = "unset";
+export function exportSummaryPdf(summary, filename = "Contract.pdf") {
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const title = "Contract Summary – Key terms and conditions at a glance";
+  doc.setFont("helvetica", "bold"); doc.setFontSize(16);
+  doc.text(title, 40, 50);
 
-  const canvas = await html2canvas(container, {
-    scale: 2,
-    useCORS: true,
-    backgroundColor: "#ffffff",
-    windowWidth: Math.max(container.scrollWidth, document.documentElement.clientWidth),
+  const groups = [
+    ["Property Details", [
+      ["Address", summary?.property?.address || "—"],
+      ["Lot/Plan", summary?.property?.lot_plan || "—"],
+      ["Land Size", summary?.property?.land_size || "—"],
+      ["Zoning", summary?.property?.zoning || "—"],
+    ]],
+    ["Financial Terms", [
+      ["Purchase Price", summary?.financial?.price || "—"],
+      ["Deposit", summary?.financial?.deposit || "—"],
+      ["Balance", summary?.financial?.balance || "—"],
+      ["Stamp Duty", summary?.financial?.stamp_duty || "—"],
+    ]],
+    ["Key Dates", [
+      ["Settlement", summary?.dates?.settlement || "—"],
+      ["Finance Due", summary?.dates?.finance_due || "—"],
+      ["Cooling Off", summary?.dates?.cooling_off || "—"],
+      ["Possession", summary?.dates?.possession || "—"],
+    ]],
+  ];
+
+  let y = 80;
+  groups.forEach(([heading, rows]) => {
+    doc.setFont("helvetica", "bold"); doc.setFontSize(12);
+    doc.text(heading, 40, y); y += 6;
+    doc.autoTable({
+      startY: y + 8,
+      margin: { left: 40, right: 40 },
+      body: rows,
+      styles: { fontSize: 10, cellPadding: 6 },
+      theme: "grid",
+      didDrawPage: ({ cursor }) => (y = cursor.y + 14),
+    });
   });
 
-  // restore
-  container.style.maxHeight = prev;
-
-  const imgData = canvas.toDataURL("image/png");
-  const pdf = new jsPDF("p", "mm", "a4");
-  const pageWidth = pdf.internal.pageSize.getWidth();
-  const pageHeight = pdf.internal.pageSize.getHeight();
-
-  const margin = 10; // mm
-  const imgWidth = pageWidth - margin * 2;
-  const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-  let heightLeft = imgHeight;
-  let position = margin;
-
-  pdf.addImage(imgData, "PNG", margin, position, imgWidth, imgHeight);
-  heightLeft -= pageHeight - margin * 2;
-
-  while (heightLeft > 0) {
-    pdf.addPage();
-    position = margin - (imgHeight - heightLeft);
-    pdf.addImage(imgData, "PNG", margin, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight - margin * 2;
-  }
-
-  const safe = (docTitle || "S32_Insights_Report").replace(/[^\w\-]+/g, "_");
-  pdf.save(`${safe}.pdf`);
+  doc.save((filename?.replace(/\.[^.]+$/, "") || "Contract") + "_summary.pdf");
 }

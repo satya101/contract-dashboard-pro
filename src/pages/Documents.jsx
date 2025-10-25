@@ -1,118 +1,73 @@
-// src/pages/Documents.jsx
-import React, { useMemo } from "react";
-import {
-  Typography, Card, CardContent, IconButton, Stack, TextField, Tooltip,
-  FormControl, InputLabel, Select, MenuItem
-} from "@mui/material";
-import DownloadIcon from "@mui/icons-material/Download";
-import VisibilityIcon from "@mui/icons-material/Visibility";
-import ShareIcon from "@mui/icons-material/Share";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
-
-import { loadHistory, saveLastSummary, clearHistory } from "../services/storage.js";
-import { exportSummaryAsPDF } from "../utils/pdfExport.js";
-import { useNavigate } from "react-router-dom";
-
-const withinDays = (ts, days) => {
-  if (!days) return true;
-  const d = Number(ts || 0);
-  if (!d) return false;
-  const cutoff = Date.now() - days * 86400000;
-  return d >= cutoff;
-};
+import React, { useMemo, useState } from "react";
+import { exportSummaryPdf } from "../utils/pdfExport.js";
+import { shareReport } from "../services/api.js";
 
 export default function Documents() {
-  const navigate = useNavigate();
-  const [query, setQuery] = React.useState("");
-  const [range, setRange] = React.useState("any"); // any|7|30|90
-  const [docs, setDocs] = React.useState(loadHistory());
+  const [q, setQ] = useState("");
+  const [date, setDate] = useState("");
+  const data = JSON.parse(localStorage.getItem("auditHistory") || "[]");
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const days = range === "any" ? 0 : Number(range);
-    return docs.filter((d) => {
-      const nameOK = !q || (d.name || "").toLowerCase().includes(q);
-      const dateOK = withinDays(d.ts, days);
-      return nameOK && dateOK;
+  const rows = useMemo(() => {
+    return data.filter(r => {
+      const matchQ = q ? r.filename.toLowerCase().includes(q.toLowerCase()) : true;
+      const matchDate = date ? r.when.slice(0,10) === date : true;
+      return matchQ && matchDate;
     });
-  }, [docs, query, range]);
-
-  const open = (d) => {
-    saveLastSummary({ summary: d.summary, fileName: d.name });
-    navigate("/results");
-  };
-
-  const download = async (d) => {
-    // make a temporary container for PDF export (re-uses util that snapshots DOM)
-    const tmp = document.createElement("div");
-    tmp.style.position = "absolute"; tmp.style.left = "-9999px";
-    tmp.innerHTML = `<pre style="font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;padding:16px;">${JSON.stringify(d.summary, null, 2)}</pre>`;
-    document.body.appendChild(tmp);
-    await exportSummaryAsPDF({ container: tmp, docTitle: d.name || "Summary" });
-    document.body.removeChild(tmp);
-  };
-
-  const share = (d) => {
-    const to = prompt("Send report to (email):");
-    if (!to) return;
-    const subject = `S32 Insights Summary — ${d.name}`;
-    const text = JSON.stringify(d.summary, null, 2);
-    window.location.href = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`;
-  };
-
-  const removeAll = () => {
-    if (!confirm("Clear all audit history?")) return;
-    setDocs(clearHistory());
-  };
+  }, [data, q, date]);
 
   return (
-    <div>
-      <Typography variant="h4" sx={{ fontWeight: 900, mb: 1 }}>
-        Document Management Center
-      </Typography>
-      <Typography color="text.secondary" sx={{ mb: 3 }}>
-        Secure, organized, and intelligent document storage with comprehensive version control and collaboration tools.
-      </Typography>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-extrabold">Document Management Center</h1>
+        <p className="text-slate-600">
+          Secure, organized, and intelligent document storage with comprehensive version control and collaboration tools.
+        </p>
+      </div>
 
-      <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mb: 2 }}>
-        <TextField size="small" placeholder="Search by document name" value={query} onChange={(e)=>setQuery(e.target.value)} />
-        <FormControl size="small" sx={{ minWidth: 180 }}>
-          <InputLabel>Date filter</InputLabel>
-          <Select label="Date filter" value={range} onChange={(e)=>setRange(e.target.value)}>
-            <MenuItem value="any">Any time</MenuItem>
-            <MenuItem value="7">Last 7 days</MenuItem>
-            <MenuItem value="30">Last 30 days</MenuItem>
-            <MenuItem value="90">Last 90 days</MenuItem>
-          </Select>
-        </FormControl>
-        <Tooltip title="Clear all history">
-          <IconButton onClick={removeAll}><DeleteOutlineIcon /></IconButton>
-        </Tooltip>
-      </Stack>
+      <div className="flex flex-wrap gap-3">
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search documents…"
+          className="px-3 py-2 rounded-lg border bg-white"
+        />
+        <input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          className="px-3 py-2 rounded-lg border bg-white"
+        />
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {filtered.map((d, idx) => (
-          <Card key={idx} variant="outlined" sx={{ borderRadius: 3 }}>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>{d.name || "Untitled"}</Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {d.ts ? new Date(d.ts).toLocaleString() : "—"}
-                  </Typography>
-                </div>
-                <Stack direction="row" spacing={1}>
-                  <Tooltip title="View"><IconButton onClick={()=>open(d)}><VisibilityIcon /></IconButton></Tooltip>
-                  <Tooltip title="Download PDF"><IconButton onClick={()=>download(d)}><DownloadIcon /></IconButton></Tooltip>
-                  <Tooltip title="Share"><IconButton onClick={()=>share(d)}><ShareIcon /></IconButton></Tooltip>
-                </Stack>
-              </div>
-            </CardContent>
-          </Card>
+      <div className="rounded-2xl border bg-white divide-y">
+        {rows.length === 0 && <div className="p-6 text-slate-600">No documents found.</div>}
+        {rows.map((r) => (
+          <div key={r.id} className="p-4 flex items-center justify-between gap-3">
+            <div>
+              <div className="font-medium">{r.filename}</div>
+              <div className="text-sm text-slate-500">{new Date(r.when).toLocaleString()}</div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => exportSummaryPdf(r.summary, r.filename)}
+                className="rounded-lg bg-indigo-600 text-white px-3 py-2 text-sm hover:bg-indigo-700"
+              >
+                Download summary
+              </button>
+              <button
+                onClick={async () => {
+                  const email = prompt("Send to email:");
+                  if (!email) return;
+                  await shareReport(email, r.summary, r.filename);
+                  alert("Sent.");
+                }}
+                className="rounded-lg border px-3 py-2 text-sm hover:bg-slate-50"
+              >
+                Share
+              </button>
+            </div>
+          </div>
         ))}
-        {filtered.length === 0 && (
-          <Card variant="outlined"><CardContent>No documents match your filters.</CardContent></Card>
-        )}
       </div>
     </div>
   );

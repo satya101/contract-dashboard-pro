@@ -1,41 +1,57 @@
-// src/pages/LandingPage.jsx
 import React from "react";
-import { Box, Typography, Stack, Chip } from "@mui/material";
-import AnimatedLegalBackground from "../components/AnimatedLegalBackground.jsx";
-import HowItWorks from "../components/HowItWorks.jsx";
+import { Link } from "react-router-dom";
+import HowItWorks from "../sections/HowItWorks.jsx";
 
 export default function LandingPage() {
   return (
-    <Box sx={{ width: "100%" }}>
-      {/* HERO (no local nav; SiteShell provides it) */}
-      <Box sx={{
-        position: "relative", overflow: "hidden",
-        py: { xs: 8, md: 12 },
-        background: "linear-gradient(180deg, #f8fbff 0%, #ffffff 60%)",
-        borderRadius: 3,
-      }}>
-        <AnimatedLegalBackground opacity={0.12} />
-        <Stack spacing={2.5} alignItems="center" textAlign="center">
-          <Chip label="Trusted by 50,000+ Property Buyers" color="primary" variant="outlined" />
-          <Typography variant="h2" sx={{ fontWeight: 900, lineHeight: 1.05, maxWidth: 1000 }}>
-            See What Others Miss in Your <Box component="span" sx={{
-              background: "linear-gradient(90deg,#4f46e5,#06b6d4,#f59e0b)",
-              WebkitBackgroundClip: "text", color: "transparent"
-            }}>Property Contract</Box>
-          </Typography>
-          <Typography variant="h6" color="text.secondary" sx={{ maxWidth: 900 }}>
-            Section 32-aware AI turns complex contracts into clear, actionable insights.
-          </Typography>
-        </Stack>
-      </Box>
+    <div className="space-y-16">
+      {/* HERO */}
+      <section className="relative rounded-2xl bg-gradient-to-b from-indigo-50 to-white p-8 md:p-12">
+        <div className="max-w-3xl">
+          <span className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm mb-4">
+            <span className="h-2 w-2 bg-blue-600 rounded-full" />
+            Secure AI Analysis
+          </span>
+          <h1 className="text-4xl md:text-5xl font-extrabold leading-tight">
+            See What Others Miss in Your <span className="text-indigo-600">Property Contract</span>
+          </h1>
+          <p className="mt-4 text-lg text-slate-600">
+            Your AI legal advisor transforms complex Section 32 contracts into clear, actionable insights. 
+            Get confidence in every contract with professional-grade analysis in minutes, not days.
+          </p>
 
-      {/* HOW IT WORKS – exactly one row on desktop */}
-      <Box id="how" sx={{ mt: 5 }}>
-        <Typography variant="h4" sx={{ fontWeight: 800, mb: 3, textAlign: "center" }}>
-          How it works
-        </Typography>
-        <HowItWorks forceOneRow />
-      </Box>
-    </Box>
+          {/* claims */}
+          <ul className="mt-6 flex flex-wrap gap-4 text-sm text-slate-600">
+            <li className="inline-flex items-center gap-2 bg-white border rounded-full px-3 py-1">
+              <span className="h-2 w-2 bg-emerald-500 rounded-full" /> 99.7% Accuracy Rate
+            </li>
+            <li className="inline-flex items-center gap-2 bg-white border rounded-full px-3 py-1">
+              <span className="h-2 w-2 bg-emerald-500 rounded-full" /> Bank-Grade Security
+            </li>
+            <li className="inline-flex items-center gap-2 bg-white border rounded-full px-3 py-1">
+              <span className="h-2 w-2 bg-emerald-500 rounded-full" /> Results in 5 Minutes
+            </li>
+          </ul>
+
+          <div className="mt-8 flex gap-3">
+            <Link
+              to="/analysis"
+              className="inline-flex items-center justify-center rounded-lg bg-indigo-600 text-white px-5 py-3 font-medium hover:bg-indigo-700"
+            >
+              Review Your Contract Now
+            </Link>
+            <a
+              href="#how-it-works"
+              className="inline-flex items-center justify-center rounded-lg border px-5 py-3 font-medium text-slate-700 hover:bg-slate-50"
+            >
+              See how it works
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* HOW IT WORKS */}
+      <HowItWorks />
+    </div>
   );
 }
